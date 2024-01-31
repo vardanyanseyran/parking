@@ -1,93 +1,84 @@
 package model;
-
 import enums.VehicleType;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ParkingLot {
     private static final int MAX_CAPACITY = 200;
-    private ParkingSpot[] compactSpots;
-    private ParkingSpot[] largeSpots;
-
-    private int compactSpotCount;
-    private int largeSpotCount;
+    private Map<VehicleType, List<ParkingSpot>> parkingSpots;
 
     public ParkingLot() {
-        compactSpots = new ParkingSpot[MAX_CAPACITY / 2];
-        largeSpots = new ParkingSpot[MAX_CAPACITY / 2];
+        parkingSpots = new HashMap<>();
 
-        for (int i = 0; i < MAX_CAPACITY / 2; i++) {
-            compactSpots[i] = new ParkingSpot();
-            largeSpots[i] = new ParkingSpot();
+        for (VehicleType vehicleType : VehicleType.values()) {
+            List<ParkingSpot> spots = new ArrayList<>();
+            for (int i = 0; i < MAX_CAPACITY / VehicleType.values().length; i++) {
+                spots.add(new ParkingSpot());
+            }
+            parkingSpots.put(vehicleType, spots);
         }
-        compactSpotCount = MAX_CAPACITY / 2;
-        largeSpotCount = MAX_CAPACITY / 2;
     }
 
     public void displayAvailableSpots() {
-        System.out.println("Compact spots available " + compactSpotCount);
-        System.out.println("large spots available " + largeSpotCount);
+        for (VehicleType vehicleType : VehicleType.values()) {
+            System.out.println(vehicleType + " Spots Available " + getAvailableSpotCount(vehicleType));
+        }
     }
 
     public void parkVehicle(VehicleType vehicleType) {
-        ParkingSpot[] spots = getAvailableSpot(vehicleType);
-        if (spots == null || spots.length == 0) {
-            System.out.println("There is no available spots for " + vehicleType);
+        List<ParkingSpot> spots = getAvailableSpots(vehicleType);
+        if (spots.isEmpty()) {
+            System.out.println("There is no available spot for " + vehicleType);
             return;
         }
-        spots[0].occupy();
-        updateSpotCount(vehicleType, -1);
+        spots.get(0).occupy();
         System.out.println(vehicleType + " parked successfully");
     }
 
     public void retrieveVehicle(VehicleType vehicleType) {
-        ParkingSpot[] spots = getOccupiedSpots(vehicleType);
-        if (spots.length == 0) {
-            System.out.println(vehicleType + " is not found in the parking lot");
+        List<ParkingSpot> spots = getOccupiedSpots(vehicleType);
+        if (spots.isEmpty()) {
+            System.out.println("No " + vehicleType + " found in the parking lot");
             return;
         }
-        spots[0].vacate();
-        updateSpotCount(vehicleType, 1);
+        spots.get(0).vacate();
         System.out.println(vehicleType + " retrieved successfully");
     }
 
-    private void updateSpotCount(VehicleType vehicleType, int change) {
-        if (vehicleType == VehicleType.CAR || vehicleType == VehicleType.MOTORCYCLE) {
-            compactSpotCount += change;
-        } else if (vehicleType == VehicleType.TRUCK) {
-            largeSpotCount += change;
-        }
-    }
-
-    private ParkingSpot[] getAvailableSpot(VehicleType vehicleType) {
-        if (vehicleType == VehicleType.CAR || vehicleType == VehicleType.MOTORCYCLE) {
-            return getAvailableSpot(compactSpots);
-        } else if (vehicleType == VehicleType.TRUCK) {
-            return getAvailableSpot(largeSpots);
-        }
-        return null;
-    }
-
-    private ParkingSpot[] getAvailableSpot(ParkingSpot[] spots) {
-        for (ParkingSpot spot : spots) {
+    private int getAvailableSpotCount(VehicleType vehicleType) {
+        int count = 0;
+        for (ParkingSpot spot : parkingSpots.get(vehicleType)) {
             if (!spot.isOccupied()) {
-                return new ParkingSpot[]{spot};
+                count++;
             }
         }
-        return null;
+        return count;
     }
 
-    private ParkingSpot[] getOccupiedSpots(VehicleType vehicleType) {
-        ParkingSpot[] spots = (vehicleType == VehicleType.CAR || vehicleType == VehicleType.MOTORCYCLE) ? compactSpots : largeSpots;
+    private List<ParkingSpot> getAvailableSpots(VehicleType vehicleType) {
+        List<ParkingSpot> spots = parkingSpots.get(vehicleType);
+        List<ParkingSpot> availableSpots = new ArrayList<>();
+        for (ParkingSpot spot : spots) {
+            if (!spot.isOccupied()) {
+                availableSpots.add(spot);
+                return availableSpots;
+            }
+        }
+        return availableSpots;
+    }
 
+    private List<ParkingSpot> getOccupiedSpots(VehicleType vehicleType) {
+        List<ParkingSpot> spots = parkingSpots.get(vehicleType);
         List<ParkingSpot> occupiedSpots = new ArrayList<>();
-
         for (ParkingSpot spot : spots) {
             if (spot.isOccupied()) {
                 occupiedSpots.add(spot);
+                return occupiedSpots;
             }
         }
-        return occupiedSpots.toArray(new ParkingSpot[0]);
+        return occupiedSpots;
     }
 }
